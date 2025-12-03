@@ -48,3 +48,12 @@ services:
       - "3306:3306"
     volumes:
       - ./db_data:/var/lib/mysql # 데이터 영구 저장
+
+  wiremock:
+    image: wiremock/wiremock:latest
+    ports:
+      - "8089:8080" # 8089 포트로 접속
+    # 실행될 때 429 에러를 뱉도록 규칙 설정
+    command: >
+      --verbose
+      --global-response-templating

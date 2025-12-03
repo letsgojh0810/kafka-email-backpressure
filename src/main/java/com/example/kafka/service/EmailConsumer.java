@@ -18,20 +18,26 @@ public class EmailConsumer {
         this.registry = registry;
     }
 
-    // 👇 id 지정 필수, 토픽 이름 Producer랑 똑같이!
     @KafkaListener(id = "my-listener-id", topics = "daily-email-job")
     public void consume(String email) {
-        // 1. 들어오자마자 로그 찍기 (이게 안 찍히면 연결 문제)
-        System.out.println("📨 수신: " + email);
+        // System.out.println("📨 수신함: " + email);
 
         try {
             mailClient.sendEmail(email);
         } catch (HttpClientErrorException.TooManyRequests e) {
-            logAndPause();
-            throw e; // Kafka가 재시도하도록 예외 던짐
+            // 이건 진짜 429 에러 (아직 서킷 열리기 전)
+            System.out.println("⚠️ [429] 너무 빨라요! 서킷 집계 중...");
+            throw e;
+        } catch (io.github.resilience4j.circuitbreaker.CallNotPermittedException e) {
+            // 👇 [New] 서킷이 열려서 차단된 경우 (스택 트레이스 없이 깔끔하게!)
+            System.out.println("⛔ [Circuit Open] 서킷 가동 중... 잠시 대기합니다.");
+
+            // 여기서 잠깐 쉬어주면 로그가 너무 빨리 올라가는 걸 막을 수 있음
+            try { Thread.sleep(1000); } catch (InterruptedException ig) {}
+
+            throw e; // Kafka에게 "나중에 다시 할게"라고 알려줌
         } catch (Exception e) {
-            System.err.println("❌ 에러 발생: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ 알 수 없는 에러: " + e.getMessage());
         }
     }
 
