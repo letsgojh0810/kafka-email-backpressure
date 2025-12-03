@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.0.0'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.2.3'
+    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = 'com.example'
@@ -9,39 +9,41 @@ version = '0.0.1-SNAPSHOT'
 description = 'kafka'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // 1. Web (Tomcat 포함)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // 2. Kafka: 이 프로젝트의 핵심 (Producer/Consumer)
+    // 2. Kafka (Producer/Consumer)
     implementation 'org.springframework.kafka:spring-kafka'
 
-    // 3. Lombok: Getter, Setter, Constructor 자동 생성
+    // 3. Lombok (코드 단축)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter'
+    // 4. DevTools (서버 자동 재시작 등 개발 편의)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // 5. Test (JUnit, Mockito 등)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }

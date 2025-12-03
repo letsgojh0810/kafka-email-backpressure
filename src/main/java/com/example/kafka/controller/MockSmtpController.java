@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequestMapping("/mock/smtp")
 public class MockSmtpController {
 
-    private static final int MAX_REQUESTS_PER_SECOND = 50; // 제한 속도
+    private static final int MAX_REQUESTS_PER_SECOND = 5; // 제한 속도
     private final AtomicInteger requestCount = new AtomicInteger(0);
     private final AtomicLong lastResetTime = new AtomicLong(System.currentTimeMillis());
 
     @PostMapping("/send")
     public ResponseEntity<String> sendEmail() throws InterruptedException {
         // 네트워크 지연 흉내 (10~50ms)
-        Thread.sleep((long) (Math.random() * 40 + 10));
+        Thread.sleep(1);
 
         long currentTime = System.currentTimeMillis();
 

@@ -12,10 +12,10 @@ public class EmailProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    // 1만 건을 한 번에 Kafka로 쏘는 메소드
     public void sendBulkEmails() {
         for (int i = 1; i <= 10000; i++) {
-            kafkaTemplate.send("email-send-tasks", "user_" + i + "@example.com");
+            // 👇 토픽 이름 변경!
+            kafkaTemplate.send("daily-email-job", "user_" + i + "@example.com");
         }
         System.out.println("🚀 10,000건의 이메일 작업이 Kafka에 등록되었습니다.");
     }

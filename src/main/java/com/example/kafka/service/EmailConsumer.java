@@ -11,47 +11,48 @@ import org.springframework.web.client.HttpClientErrorException;
 public class EmailConsumer {
 
     private final ExternalMailClient mailClient;
-    private final KafkaListenerEndpointRegistry registry; // 컨슈머 ON/OFF 스위치
+    private final KafkaListenerEndpointRegistry registry;
 
     public EmailConsumer(ExternalMailClient mailClient, KafkaListenerEndpointRegistry registry) {
         this.mailClient = mailClient;
         this.registry = registry;
     }
 
-    // id는 나중에 레지스트리에서 찾을 때 씁니다.
-    @KafkaListener(id = "email-listener", topics = "email-send-tasks")
+    // 👇 id 지정 필수, 토픽 이름 Producer랑 똑같이!
+    @KafkaListener(id = "my-listener-id", topics = "daily-email-job")
     public void consume(String email) {
-        try {
-            // Mock 서버로 전송 시도
-            mailClient.sendEmail(email);
-            // System.out.println("✅ 전송 성공: " + email); // 로그 너무 많으면 주석
+        // 1. 들어오자마자 로그 찍기 (이게 안 찍히면 연결 문제)
+        System.out.println("📨 수신: " + email);
 
+        try {
+            mailClient.sendEmail(email);
         } catch (HttpClientErrorException.TooManyRequests e) {
             logAndPause();
-            // 현재 실패한 메시지는 다시 처리해야 하므로 예외를 던져야 함 (여기선 단순화)
-            throw e;
+            throw e; // Kafka가 재시도하도록 예외 던짐
         } catch (Exception e) {
-            // 그 외 에러 처리
+            System.err.println("❌ 에러 발생: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void logAndPause() {
-        System.out.println("⛔ [Backpressure] 외부 서버 과부하! 컨슈머를 5초간 정지합니다.");
+        System.out.println("⛔ [Backpressure] 과부하 감지! 잠시 멈춥니다.");
 
-        MessageListenerContainer container = registry.getListenerContainer("email-listener");
+        MessageListenerContainer container = registry.getListenerContainer("my-listener-id");
+
         if (container != null) {
-            container.pause(); // ⏸️ 일시 정지
-
-            // 5초 뒤에 다시 켜는 스레드 실행
+            container.pause();
             new Thread(() -> {
                 try {
                     Thread.sleep(5000);
-                    container.resume(); // ▶️ 재개
-                    System.out.println("🟢 [Backpressure] 컨슈머를 다시 가동합니다.");
+                    container.resume();
+                    System.out.println("🟢 [Backpressure] 다시 시작합니다.");
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
             }).start();
+        } else {
+            System.out.println("⚠️ 컨테이너를 찾을 수 없습니다!");
         }
     }
 }
